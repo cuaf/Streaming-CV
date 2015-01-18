@@ -1,0 +1,24 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww9000\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 *you need opencv library to be able to compile the program.*\
+*I also put the compiled code(netcvs.out and netcvc.out) in the folder, so you can just run them and see the results*\
+\
+0- cd to the Directory thet you extract the files\
+\
+1-Compiling Server Side Code: (netcvs.cpp)\
+g++ -W -Wall netcvs.cpp -o netcvs.out -I/opt/local/include -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ql\qnatural\pardirnatural
+\cf0 2-Compiling Client Side Code: (netcvc.cpp)\
+g++ -W -Wall netcvc.cpp -o netcvc.out -I/opt/local/include -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc\
+\
+\
+3-Run the Server Side:\
+./netcvs <port number>\
+\
+4-Run the Client Side:\
+./netcvc <server ip address> <server port #>}
