@@ -1,3 +1,4 @@
+//This sends the data to the other computer.
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -15,7 +16,10 @@ using namespace std;
 using namespace cv;
 
 VideoCapture    capture;
-Mat             img0, img1, img2;
+Mat             raw, img0, img1, img2;
+Mat             resizedImage;
+//rows by cols.
+Size resizeSize(640,480);
 int             is_data_ready = 1;
 int             clientSock;
 char*     	server_ip;
@@ -47,8 +51,10 @@ int main(int argc, char** argv)
         server_ip   = argv[1];
         server_port = atoi(argv[2]);
 
-        capture >> img0;
+        capture >> raw;
+        resize(raw, img0, resizeSize);
         img1 = Mat::zeros(img0.rows, img0.cols ,CV_8UC1);
+        cout << "Image has " << img0.cols << " width  " << img0.rows << "height \n";
 
         // run the streaming client as a separate thread
         if (pthread_create(&thread_c, NULL, streamClient, NULL)) {
@@ -66,7 +72,9 @@ int main(int argc, char** argv)
 
         while(key != 'q') {
                 /* get a frame from camera */
-                capture >> img0;
+                //capture >> img0;
+                capture >> raw;
+                resize(raw, img0, resizeSize);
                 if (img0.empty()) break;
 
                 pthread_mutex_lock(&amutex);

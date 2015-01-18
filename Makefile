@@ -6,3 +6,5 @@ LDFLAGS     += `pkg-config opencv --libs`
 
 # Name your target executables here
 netcv: netcvc netcvs
+clean: 
+	$(RM) netcvc netcvs
