@@ -5,7 +5,7 @@ You must already have openCV installed, and pkgconfig.
 
 The makefile should be set up to correctly find the libraries, so just:
 
-make clean
+make clean &&
 make
 
 On the receiving end: ./netcvs8080
