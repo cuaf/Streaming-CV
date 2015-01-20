@@ -50,7 +50,7 @@ int main ( int argc,char **argv ) {
     //Open camera
     cout<<"Opening Camera..."<<endl;
     if (!Camera.open()) {cerr<<"Error opening the camera"<<endl;return -1;}
-    cout << "sleeping on startup because camera is lame when first started?. Please wait." << '\n';
+    cout << "sleeping on startup because camera is slow to respond when first started?. Please wait." << '\n';
     sleep(1);
     //Start capture
         Camera.grab();
@@ -67,7 +67,7 @@ int main ( int argc,char **argv ) {
 
         cout << "\n--> Press 'q' to quit. \n\n" << endl;
 
-        /* print the width and height of the frame, needed by the client */
+        /* print the width and height of the frame, check this is set up the same on the receive side */
         cout << "\n--> Transferring  (" << img0.cols << "x" << img0.rows << ")  images to the:  " << server_ip << ":" << server_port << endl;
 
         /* Didn't compile with the namedwindow options because we don't have GTK.
@@ -79,7 +79,6 @@ int main ( int argc,char **argv ) {
 
         while(key != 'q') {
                 /* get a frame from camera */
-                //capture >> raw;
             Camera.grab();
             Camera.retrieve(image);
 
@@ -90,14 +89,14 @@ int main ( int argc,char **argv ) {
 
                         //cv::flip(img0, img0, 1);
                         cv::cvtColor(img0, img1, CV_BGR2GRAY);
-                        //Image processing goes here?
+                        //Image processing can go here before being sent.
                         //cv::GaussianBlur(img1, img1, cv::Size(7,7), 1.5, 1.5);
                     //cv::Canny(img1, img1, 0, 30, 3);
 
                         is_data_ready = 1;
 
                 pthread_mutex_unlock(&amutex);
-                sleep(1);
+                usleep(1000);   //sleep before sending next frame.
 
                 /*also display the video here on client */
 

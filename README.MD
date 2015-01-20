@@ -77,6 +77,15 @@ For what it's worth, I found CMake didn't always find libraries; this may be due
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/)
 ```
 
+Demo
+------
+
+If this is all set up correctly, you should be able to run make in this directory to produce the netcvs and netcvc programs. These wil send and receive from PCs/Macs over TCP with ./netcvc 127.0.01 8080 and ./netcvs 8080.
+
+Only sending is implemented on the Pi at present, as I don't have an HDMI monitor or LCD breakout on the pi.
+
+For this use cmake and find piSender in the build subdirectory. This takes the same arguments as netcvc - an ip address and port number.
+
 
 UDP
 ====
