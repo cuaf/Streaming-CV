@@ -87,11 +87,5 @@ Only sending is implemented on the Pi at present, as I don't have an HDMI monito
 For this use cmake and find piSender in the build subdirectory. This takes the same arguments as netcvc - an ip address and port number.
 
 
-UDP
-====
-
-This was a flawed attempt, as the openCV raw matrices are larger than will fit in a single UDP packet.
-
-
 
 
