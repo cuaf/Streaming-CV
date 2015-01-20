@@ -26,7 +26,8 @@ The pi is only going to send.
 For this you need to have a load of other projects compiled - mostly OpenCV,
 
 Start installing
-============
+------------
+```
 sudo apt-get install build-essential
 sudo apt-get install cmake cmake-curses-gui
 sudo apt-get install pkg-config
@@ -34,25 +35,34 @@ sudo apt-get install  python-dev python-numpy
 sudo apt-get install mosh
 sudo apt-get install libX11-devel
 
- libpng12-0 libpng12-dev libpng++-dev libpng3 libpnglite-dev zlib1g-dbg zlib1g zlib1g-dev pngtools
+ sudo apt-get install libpng12-0 libpng12-dev libpng++-dev libpng3 libpnglite-dev zlib1g-dbg zlib1g zlib1g-dev pngtools
+
+ ```
 
 wget the latest version of opencv 2.4.10
 
-unzip it.
+unzip it, cd to the dir.
 
-cd to the dir.
+```
 mkdir release
 ccmake ..
+```
 
-//Have it generate a config file, then look through the options.
+Have it generate a config file, then look through the options.
 
-make.
+```
+make
+sudo make install
+```
 
-//Wait far, far too long (just leave it for circa 5 hours).
+Wait for ages (just leave it for circa 5 hours).
 
 Now you have an openCV install!
 
-I had various issues with configure not finding libraries at this point - try sudo ldconfig
+I had various issues with configure not finding libraries at this point - try
+```
+sudo ldconfig
+```
 
 Next you need the libraries for the pi to speak to the videocore section of the processor (this controls the interface to the pi camera.)
 
@@ -61,6 +71,12 @@ Do the usual build dir, cmake and sudo make install routine.
 
 Now you should be able to just pull down this repository on the pi, and use cmake.
 I didn't translate the cmake script to a normal makefile as the raspicam routines already rely on cmake to pull in libraries. This should correctly find the other libraries installed in /opt/vc/lib for the videocore, and the opencv libraries too.
+
+For what it's worth, I found CMake didn't always find libraries; this may be due to flaws in the provided CMakeLists.txt. I was able to fix this by the following line to CMakeLists of the example programs supplied in the other git repositories.
+```
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/lib/cmake/)
+```
+
 
 UDP
 ====
