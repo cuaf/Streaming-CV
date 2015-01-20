@@ -21,7 +21,8 @@ using namespace cv;
 VideoCapture    capture;
 Mat             raw, img0, convertedColour;
 Mat             resizedImage;
-//rows by cols.
+
+//rows by cols. We resize our image before sending it over.
 extern Size resizeSize;
 extern Mat img1, img2;
 extern int             is_data_ready;
@@ -92,9 +93,10 @@ int main(int argc, char** argv)
 
                         flip(img0, img0, 1);
                         cvtColor(img0, img1, CV_BGR2GRAY);
-                        //Image processing goes here?
+
+                        //Example image processing goes here?
                         GaussianBlur(img1, img1, Size(7,7), 1.5, 1.5);
-                    Canny(img1, img1, 0, 30, 3);
+                        Canny(img1, img1, 0, 30, 3);
 
                         is_data_ready = 1;
 
