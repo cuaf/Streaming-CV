@@ -16,14 +16,17 @@ using namespace std;
 using namespace cv;
 
 VideoCapture    capture;
-Mat             raw, img0, img1, img2,convertedColour;
+Mat             raw, img0, img1, img2;
 Mat             resizedImage;
 //rows by cols.
-Size resizeSize(640,500);
+Size resizeSize(200,200);
 int             is_data_ready = 1;
 int             clientSock;
 char*     	server_ip;
 int       	server_port;
+
+const int UDPMAX = 65507;
+char buffer [UDPMAX];
 
 pthread_mutex_t amutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -52,14 +55,7 @@ int main(int argc, char** argv)
         server_port = atoi(argv[2]);
 
         capture >> raw;
-        resize(raw, convertedColour, resizeSize);
-        cvtColor(convertedColour, img0, COLOR_BGR2HLS);
-        //cvtColor(InputArray src, OutputArray dst, int code)
-
-        //Image processing goes here?
-        //GaussianBlur(img0, img0, Size(7,7), 1.5, 1.5);
-        //Canny(img0, img0, 0, 30, 3);
-
+        resize(raw, img0, resizeSize);
         img1 = Mat::zeros(img0.rows, img0.cols ,CV_8UC1);
         cout << "Image has " << img0.cols << " width  " << img0.rows << "height \n";
 
@@ -88,9 +84,6 @@ int main(int argc, char** argv)
 
                         flip(img0, img0, 1);
                         cvtColor(img0, img1, CV_BGR2GRAY);
-                        //Image processing goes here?
-                        GaussianBlur(img1, img1, Size(7,7), 1.5, 1.5);
-                    Canny(img1, img1, 0, 30, 3);
 
                         is_data_ready = 1;
 
@@ -126,21 +119,23 @@ void* streamClient(void* arg)
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
         pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-        if ((clientSock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        if ((clientSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             quit("\n--> socket() failed.", 1);
         }
 
-        serverAddr.sin_family = PF_INET;
+        serverAddr.sin_family = AF_INET;
         serverAddr.sin_addr.s_addr = inet_addr(server_ip);
         serverAddr.sin_port = htons(server_port);
 
-        if (connect(clientSock, (sockaddr*)&serverAddr, serverAddrLen) < 0) {
-                quit("\n--> connect() failed.", 1);
-        }
+        //if (connect(clientSock, (sockaddr*)&serverAddr, serverAddrLen) < 0) {
+        //        quit("\n--> connect() failed.", 1);
+        //}
 
         int  imgSize = img1.total()*img1.elemSize();
         int  bytes=0;
         img2 = (img1.reshape(0,1)); // to make it continuous
+        cout << "size of image is " << imgSize << '\n';
+        //cout << img2 << '\n';
 
         /* start sending images */
         while(1)
@@ -148,15 +143,25 @@ void* streamClient(void* arg)
                 /* send the grayscaled frame, thread safe */
                 if (is_data_ready) {
                         pthread_mutex_lock(&amutex);
-                                if ((bytes = send(clientSock, img2.data, imgSize, 0)) < 0){
-					cerr << "\n--> bytes = " << bytes << endl;
-                                	quit("\n--> send() failed", 1);
-				}
+                        //char data [] = "lololol";
+                        //std::memset(buffer);
+                    std::memcpy(buffer, img2.data, imgSize);
+
+                     bytes=sendto(clientSock,&buffer, imgSize,0,(const struct sockaddr *)&serverAddr,serverAddrLen);
+                           //bytes=sendto(clientSock,data, strlen(data),0,(const struct sockaddr *)&serverAddr,serverAddrLen);
+                           cout << " sent " << bytes << " of data \n";
+
+                               // if ((bytes = send(clientSock, img2.data, imgSize, 0)) < 0){
+		//			cerr << "\n--> bytes = " << bytes << endl;
+                           //     	quit("\n--> send() failed", 1);
+		//		}
+
 				is_data_ready = 0;
                         pthread_mutex_unlock(&amutex);
-			memset(&serverAddr, 0x0, serverAddrLen);
+	           memset(&serverAddr, 0x0, serverAddrLen);
                 }
                 /* if something went wrong, restart the connection */
+                /*
                 if (bytes != imgSize) {
                         cerr << "\n-->  Connection closed (bytes != imgSize)" << endl;
                         close(clientSock);
@@ -164,7 +169,8 @@ void* streamClient(void* arg)
                         if (connect(clientSock, (sockaddr*) &serverAddr, serverAddrLen) == -1) {
                                 quit("\n--> connect() failed", 1);
                         }
-                }
+
+                /*}
 
                 /* have we terminated yet? */
                 pthread_testcancel();

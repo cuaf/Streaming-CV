@@ -29,8 +29,8 @@ int main(int argc, char** argv)
 {
         pthread_t thread_s;
         int width, height, key;
-	width = 640;
-	height = 500;
+	width = 480;
+	height = 320;
 
 	if (argc != 2) {
                 quit("Usage: netcv_server <listen_port> ", 0);
@@ -80,22 +80,23 @@ void* streamServer(void* arg)
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
         pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-        if ((listenSock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        //if ((listenSock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        if ((listenSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             quit("socket() failed.", 1);
         }
 
-        serverAddr.sin_family = PF_INET;
+        serverAddr.sin_family = AF_INET;
         serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
         serverAddr.sin_port = htons(listenPort);
 
         if (bind(listenSock, (sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
                 quit("bind() failed", 1);
         }
-
+/*
         if (listen(listenSock, 5) == -1) {
                 quit("listen() failed.", 1);
         }
-
+*/
         int  imgSize = img.total()*img.elemSize();
         char sockData[imgSize];
         int  bytes=0;
@@ -103,24 +104,40 @@ void* streamServer(void* arg)
         /* start receiving images */
         while(1)
         {
-	        cout << "-->Waiting for TCP connection on port " << listenPort << " ...\n\n";
+	        cout << "-->Waiting for UDP packet on port " << listenPort << " ...\n\n";
 
 		/* accept a request from a client */
+            /*
 	        if ((connectSock = accept(listenSock, (sockaddr*)&clientAddr, &clientAddrLen)) == -1) {
 	                quit("accept() failed", 1);
 	        }else{
 		    	cout << "-->Receiving image from " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << "..." << endl;
 		}
+            */
 
-		memset(sockData, 0x0, sizeof(sockData));
-
+/*
+              len = sizeof(cliaddr);
+      n = recvfrom(sockfd,mesg,1000,0,(struct sockaddr *)&cliaddr,&len);
+      sendto(sockfd,mesg,n,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
+      printf("-------------------------------------------------------\n");
+      mesg[n] = 0;
+      printf("Received the following:\n");
+      printf("%s",mesg);
+      printf("-------------------------------------------------------\n");
+*/
 		while(1){
+                        memset(sockData, 0x0, sizeof(sockData));
+                        bytes = recvfrom(listenSock, sockData, imgSize , 0,(struct sockaddr *)&clientAddr,&clientAddrLen);
+                        cout << "Received a packet" << '\n';
 
+                        /*
                 	for (int i = 0; i < imgSize; i += bytes) {
-                        	if ((bytes = recv(connectSock, sockData +i, imgSize  - i, 0)) == -1) {
+
+                        	if ((bytes = recvfrom(listenSock, sockData +i, imgSize  - i, 0,(struct sockaddr *)&clientAddr,&clientAddrLen)) == -1) {
  	                              	quit("recv failed", 1);
 				}
                 	}
+                    */
                 	/* convert the received data to OpenCV's Mat format, thread safe */
                 	pthread_mutex_lock(&amutex);
                         	for (int i = 0;  i < img.rows; i++) {

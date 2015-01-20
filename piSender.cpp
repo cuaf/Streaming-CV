@@ -1,9 +1,9 @@
-//This sends the data to the other computer.
-#include <netinet/in.h>
+ #include <ctime>
+#include <iostream>
+#include <raspicam/raspicam_cv.h>
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
-//for mac
-#include <unistd.h>
 
 #include <iostream>
 #include <pthread.h>
@@ -13,57 +13,54 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
-using namespace cv;
 
-VideoCapture    capture;
-Mat             raw, img0, img1, img2,convertedColour;
-Mat             resizedImage;
-//rows by cols.
-Size resizeSize(640,500);
+raspicam::RaspiCam_Cv Camera;
+cv::Mat image, img0,img1, img2, convertedColour, resizedImage;
+
+cv::Size resizeSize(640,500);
+
 int             is_data_ready = 1;
 int             clientSock;
-char*     	server_ip;
-int       	server_port;
+char*       server_ip;
+int         server_port;
 
 pthread_mutex_t amutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* streamClient(void* arg);
 void  quit(string msg, int retval);
 
-int main(int argc, char** argv)
-{
-        pthread_t   thread_c;
-        int         key;
+int main ( int argc,char **argv ) {
+
+    time_t timer_begin,timer_end;
+
+    pthread_t   thread_c;
+    int         key;
 
         if (argc < 3) {
-                quit("Usage: netcv_client <server_ip> <server_port> <input_file>(optional)", 0);
-        }
-        if (argc == 4) {
-                capture.open(argv[3]);
-        } else {
-                capture.open(0);
-        }
-
-        if (!capture.isOpened()) {
-                quit("\n--> cvCapture failed", 1);
+                quit("Usage: netcv_client <server_ip> <server_port> ", 0);
         }
 
         server_ip   = argv[1];
         server_port = atoi(argv[2]);
 
-        capture >> raw;
-        resize(raw, convertedColour, resizeSize);
-        cvtColor(convertedColour, img0, COLOR_BGR2HLS);
-        //cvtColor(InputArray src, OutputArray dst, int code)
+    //set camera params
+    Camera.set(CV_CAP_PROP_FORMAT, CV_8UC3 );
 
-        //Image processing goes here?
-        //GaussianBlur(img0, img0, Size(7,7), 1.5, 1.5);
-        //Canny(img0, img0, 0, 30, 3);
 
-        img1 = Mat::zeros(img0.rows, img0.cols ,CV_8UC1);
-        cout << "Image has " << img0.cols << " width  " << img0.rows << "height \n";
+    //Open camera
+    cout<<"Opening Camera..."<<endl;
+    if (!Camera.open()) {cerr<<"Error opening the camera"<<endl;return -1;}
+    cout << "sleeping on startup because camera is lame when first started?. Please wait." << '\n';
+    sleep(1);
+    //Start capture
+        Camera.grab();
+        Camera.retrieve ( image);
 
-        // run the streaming client as a separate thread
+    cv::resize(image, img0, resizeSize);
+    img1 = cv::Mat::zeros(img0.rows, img0.cols ,CV_8UC1);
+    cout << "Image has " << img0.cols << " width  " << img0.rows << "height \n";
+
+            // run the streaming client as a separate thread
         if (pthread_create(&thread_c, NULL, streamClient, NULL)) {
                 quit("\n--> pthread_create failed.", 1);
         }
@@ -73,44 +70,45 @@ int main(int argc, char** argv)
         /* print the width and height of the frame, needed by the client */
         cout << "\n--> Transferring  (" << img0.cols << "x" << img0.rows << ")  images to the:  " << server_ip << ":" << server_port << endl;
 
-        namedWindow("stream_client", CV_WINDOW_AUTOSIZE);
+        /* Didn't compile with the namedwindow options because we don't have GTK.
+        cv::namedWindow("stream_client", CV_WINDOW_AUTOSIZE);
                         flip(img0, img0, 1);
                         cvtColor(img0, img1, CV_BGR2GRAY);
 
+        */
+
         while(key != 'q') {
                 /* get a frame from camera */
-                //capture >> img0;
-                capture >> raw;
-                resize(raw, img0, resizeSize);
+                //capture >> raw;
+            Camera.grab();
+            Camera.retrieve(image);
+
+                cv::resize(image, img0, resizeSize);
                 if (img0.empty()) break;
 
                 pthread_mutex_lock(&amutex);
 
-                        flip(img0, img0, 1);
-                        cvtColor(img0, img1, CV_BGR2GRAY);
+                        //cv::flip(img0, img0, 1);
+                        cv::cvtColor(img0, img1, CV_BGR2GRAY);
                         //Image processing goes here?
-                        GaussianBlur(img1, img1, Size(7,7), 1.5, 1.5);
-                    Canny(img1, img1, 0, 30, 3);
+                        //cv::GaussianBlur(img1, img1, cv::Size(7,7), 1.5, 1.5);
+                    //cv::Canny(img1, img1, 0, 30, 3);
 
                         is_data_ready = 1;
 
                 pthread_mutex_unlock(&amutex);
+                sleep(1);
 
                 /*also display the video here on client */
 
-                imshow("stream_client", img0);
-                key = waitKey(30);
+                //imshow("stream_client", img0);
+                //key = cv::waitKey(30);
         }
 
         /* user has pressed 'q', terminate the streaming client */
         if (pthread_cancel(thread_c)) {
                 quit("\n--> pthread_cancel failed.", 1);
         }
-
-        /* free memory */
-        destroyWindow("stream_client");
-        quit("\n--> NULL", 0);
-return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +118,7 @@ return 0;
 void* streamClient(void* arg)
 {
         struct  sockaddr_in serverAddr;
-	socklen_t           serverAddrLen = sizeof(serverAddr);
+    socklen_t           serverAddrLen = sizeof(serverAddr);
 
         /* make this thread cancellable using pthread_cancel() */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -149,12 +147,12 @@ void* streamClient(void* arg)
                 if (is_data_ready) {
                         pthread_mutex_lock(&amutex);
                                 if ((bytes = send(clientSock, img2.data, imgSize, 0)) < 0){
-					cerr << "\n--> bytes = " << bytes << endl;
-                                	quit("\n--> send() failed", 1);
-				}
-				is_data_ready = 0;
+                    cerr << "\n--> bytes = " << bytes << endl;
+                                    quit("\n--> send() failed", 1);
+                }
+                is_data_ready = 0;
                         pthread_mutex_unlock(&amutex);
-			memset(&serverAddr, 0x0, serverAddrLen);
+            memset(&serverAddr, 0x0, serverAddrLen);
                 }
                 /* if something went wrong, restart the connection */
                 if (bytes != imgSize) {
@@ -187,8 +185,8 @@ void quit(string msg, int retval)
         if (clientSock){
                 close(clientSock);
         }
-        if (capture.isOpened()){
-                capture.release();
+        if (Camera.isOpened()){
+                Camera.release();
         }
         if (!(img0.empty())){
                 (~img0);
@@ -202,7 +200,3 @@ void quit(string msg, int retval)
         pthread_mutex_destroy(&amutex);
         exit(retval);
 }
-
-
-
-
