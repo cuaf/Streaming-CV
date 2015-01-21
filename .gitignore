@@ -1,3 +1,5 @@
 *.dsym
 *.out
 *.out.dsym
+build
+./build/
