@@ -3,3 +3,6 @@
 *.out.dsym
 build
 ./build/
+piSender
+netcvc
+netcvs
