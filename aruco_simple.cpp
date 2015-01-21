@@ -29,7 +29,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <cmath>
 #include <fstream>
 #include <sstream>
- #include <aruco/aruco.h>
+#include <aruco.h>
 #include <aruco/cvdrawingutils.h>
 #include <opencv2/highgui/highgui.hpp>
 using namespace std;
@@ -237,7 +237,7 @@ int main(int argc,char **argv)
 
             }
 
-            cv::putText(TheInputImageCopy, to_string(separation), Point(400,400), fontFace, 1.0,Scalar::all(255));
+            cv::putText(TheInputImageCopy,"test", Point(400,400), fontFace, 1.0,Scalar::all(255));
 
 
 
